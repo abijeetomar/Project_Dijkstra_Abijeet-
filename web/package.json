@@ -1,0 +1,23 @@
+{
+  "name": "hyd-metro-dijkstra",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "React visualiser for the Dijkstra router in this repo's MetroSimulation.java",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:single": "vite build --mode singlefile",
+    "preview": "vite preview",
+    "artifact": "npm run build:single && node scripts/make-artifact.js"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11",
+    "vite-plugin-singlefile": "^2.0.3"
+  }
+}

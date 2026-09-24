@@ -1,0 +1,11 @@
+# compiled Java
+*.class
+
+# node
+node_modules/
+web/dist/
+web/dist-single/
+.vite/
+
+# macOS
+.DS_Store

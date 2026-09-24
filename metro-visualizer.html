@@ -1,0 +1,1239 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hyderabad Metro Router</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
+<style>
+:root{
+  --bg:#E9ECF1; --panel:#FFFFFF; --panel-2:#F4F6F9; --bd:#D2D9E3; --bd-2:#E4E9F0;
+  --tx:#161A20; --tx-2:#58626F; --tx-3:#88929F;
+  --red:#D8322A; --green:#0B8A4B; --blue:#1668C4;
+  --amber:#9E6206; --amber-fill:#EFAA45; --violet:#6A45D9; --violet-soft:#EDE7FC;
+  --map-bg:#FBFCFD; --grid:#DCE2EA;
+  --casing:#FBFCFD;
+  --shadow:0 1px 2px rgba(16,24,40,.07), 0 10px 28px rgba(16,24,40,.09);
+  --font-d:"Barlow Condensed","Haettenschweiler","Arial Narrow",sans-serif;
+  --font-b:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --font-m:"IBM Plex Mono",ui-monospace,"SFMono-Regular",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B0E12; --panel:#14181E; --panel-2:#1A1F27; --bd:#272E39; --bd-2:#1E242D;
+    --tx:#E9EDF3; --tx-2:#9AA4B3; --tx-3:#6C7686;
+    --red:#FF675B; --green:#34C97D; --blue:#54A5F8;
+    --amber:#E9A83F; --amber-fill:#E9A83F; --violet:#A184FF; --violet-soft:#241D3C;
+    --map-bg:#0F1318; --grid:#1C2330;
+    --casing:#0F1318;
+    --shadow:0 1px 2px rgba(0,0,0,.55), 0 12px 32px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B0E12; --panel:#14181E; --panel-2:#1A1F27; --bd:#272E39; --bd-2:#1E242D;
+  --tx:#E9EDF3; --tx-2:#9AA4B3; --tx-3:#6C7686;
+  --red:#FF675B; --green:#34C97D; --blue:#54A5F8;
+  --amber:#E9A83F; --amber-fill:#E9A83F; --violet:#A184FF; --violet-soft:#241D3C;
+  --map-bg:#0F1318; --grid:#1C2330;
+  --casing:#0F1318;
+  --shadow:0 1px 2px rgba(0,0,0,.55), 0 12px 32px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--font-b);font-size:14px;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+
+#app{display:grid;grid-template-rows:auto 1fr auto;min-height:100%}
+
+/* ---------- top bar ---------- */
+#bar{
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--bd);
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:40;
+}
+.brand{display:flex;align-items:baseline;gap:9px;margin-right:2px}
+.brand b{font-family:var(--font-d);font-weight:700;font-size:25px;letter-spacing:.012em;text-transform:uppercase;line-height:1}
+.brand span{font-family:var(--font-d);font-weight:500;font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:var(--tx-3)}
+.route{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fld{display:flex;align-items:center;gap:7px;background:var(--panel-2);border:1px solid var(--bd);border-radius:7px;padding:3px 7px 3px 9px}
+.fld label{font-family:var(--font-d);font-size:14px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--tx-3)}
+.fld select{background:transparent;border:0;padding:3px 2px;max-width:min(38vw,190px);font-size:13px;font-weight:500}
+.swap{width:30px;height:30px;border-radius:7px;border:1px solid var(--bd);background:var(--panel-2);cursor:pointer;color:var(--tx-2);font-size:15px;line-height:1}
+.swap:hover{color:var(--tx);border-color:var(--tx-3)}
+
+.tport{display:flex;align-items:center;gap:6px;margin-left:auto}
+.btn{border:1px solid var(--bd);background:var(--panel-2);border-radius:7px;padding:6px 12px;cursor:pointer;
+  font-family:var(--font-d);font-size:15px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.btn:hover{border-color:var(--tx-3)}
+.btn.primary{background:var(--violet);border-color:var(--violet);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.42;cursor:default}
+.speed{display:flex;align-items:center;gap:7px;padding-left:4px}
+.speed label{font-family:var(--font-d);font-size:14px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--tx-3)}
+.speed input{width:82px;accent-color:var(--violet)}
+
+/* ---------- body ---------- */
+#body{display:grid;grid-template-columns:minmax(0,1fr) 344px;min-height:0}
+#mapwrap{position:relative;background:var(--map-bg);border-right:1px solid var(--bd);min-height:0;overflow:hidden;touch-action:none}
+#map{display:block;width:100%;height:100%;cursor:grab}
+#map.dragging{cursor:grabbing}
+
+/* map layers */
+.edge{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:5;opacity:.24;pointer-events:none;transition:opacity .18s,stroke-width .18s}
+.edge.seen{opacity:.46}
+.edge.tree{opacity:.82}
+.edge.closed{opacity:.16;stroke-dasharray:5 7}
+.edge.flash{opacity:1;stroke:var(--violet);stroke-width:7.5}
+.edge.hov{opacity:1;stroke-width:6.5}
+.edge.pick{opacity:1;stroke-width:7.5;stroke:var(--violet)}
+.hit{fill:none;stroke:transparent;stroke-width:16;stroke-linecap:round;cursor:pointer;pointer-events:stroke}
+.route-cas{fill:none;pointer-events:none;stroke:var(--casing);stroke-width:13;stroke-linecap:round;stroke-linejoin:round}
+.route-leg{fill:none;pointer-events:none;stroke-width:7.5;stroke-linecap:round;stroke-linejoin:round}
+.node{stroke-width:2;transition:r .15s}
+.node.dot{fill:var(--map-bg)}
+.node.settled{}
+.ring{fill:none;pointer-events:none}
+.nlabel{font-family:var(--font-b);font-size:9.6px;font-weight:450;fill:var(--tx-2);paint-order:stroke;stroke:var(--map-bg);stroke-width:2.6px;stroke-linejoin:round;pointer-events:none;transition:fill .15s}
+.nlabel.term{font-weight:600;fill:var(--tx);font-size:10.4px}
+.nlabel.xchg{font-weight:600;fill:var(--tx);font-size:11px}
+.nlabel.on{fill:var(--tx);font-weight:600}
+.dlabel{font-family:var(--font-m);font-size:8.6px;font-weight:500;fill:var(--amber);paint-order:stroke;stroke:var(--map-bg);stroke-width:2.6px;pointer-events:none}
+.dlabel.done{fill:var(--tx-2)}
+.wbadge{cursor:pointer}
+.wbadge rect{fill:var(--panel);stroke:var(--amber-fill);stroke-width:1.2}
+.wbadge text{font-family:var(--font-m);font-size:9px;font-weight:600;fill:var(--amber);text-anchor:middle;pointer-events:none}
+.chip-x{cursor:pointer}
+.chip-x rect{fill:var(--panel);stroke:var(--bd);stroke-width:1.2}
+.chip-x:hover rect{stroke:var(--tx-3)}
+.chip-x text{font-family:var(--font-m);font-size:9px;font-weight:600;fill:var(--tx-2);text-anchor:middle;pointer-events:none}
+.chip-x.edited rect{stroke:var(--amber-fill)}
+.chip-x.edited text{fill:var(--amber)}
+.shut{stroke:var(--red);stroke-width:2.2;stroke-linecap:round;pointer-events:none}
+.hop{font-family:var(--font-m);font-size:8.4px;fill:var(--tx-3);pointer-events:none}
+
+/* zoom cluster */
+.zoom{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:5px;z-index:5}
+.zoom button{width:31px;height:31px;border-radius:8px;border:1px solid var(--bd);background:var(--panel);cursor:pointer;
+  box-shadow:var(--shadow);font-family:var(--font-m);font-size:13px;font-weight:600;color:var(--tx-2);padding:0}
+.zoom button:hover{color:var(--tx)}
+.hint{position:absolute;left:12px;top:12px;z-index:5;max-width:min(320px,58vw);
+  background:var(--panel);border:1px solid var(--bd);border-radius:9px;box-shadow:var(--shadow);padding:8px 11px;
+  font-size:11.5px;line-height:1.5;color:var(--tx-2)}
+.hint b{color:var(--tx);font-weight:600}
+.hint kbd{font-family:var(--font-m);font-size:10.5px;background:var(--panel-2);border:1px solid var(--bd);border-radius:4px;padding:0 4px}
+.hint button{float:right;margin:-2px -4px 0 8px;border:0;background:transparent;cursor:pointer;color:var(--tx-3);font-size:14px;line-height:1}
+
+/* tooltip */
+#tip{position:absolute;z-index:30;pointer-events:none;opacity:0;transition:opacity .1s;
+  background:var(--panel);border:1px solid var(--bd);border-radius:8px;box-shadow:var(--shadow);padding:7px 10px;font-size:11.5px;max-width:230px}
+#tip.on{opacity:1}
+#tip .t{font-weight:600;font-size:12.5px;margin-bottom:3px}
+#tip .r{color:var(--tx-2);display:flex;gap:6px;justify-content:space-between}
+#tip .r b{font-family:var(--font-m);font-weight:500;color:var(--tx)}
+
+/* weight editor */
+#ed{position:absolute;z-index:35;width:246px;background:var(--panel);border:1px solid var(--bd);border-radius:11px;box-shadow:var(--shadow);padding:12px;display:none}
+#ed.on{display:block}
+#ed .eh{font-family:var(--font-d);font-size:12.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--tx-3);display:flex;justify-content:space-between;align-items:center}
+#ed .eh button{border:0;background:transparent;cursor:pointer;color:var(--tx-3);font-size:15px;line-height:1;padding:0 2px}
+#ed .et{font-weight:600;font-size:13.5px;margin:5px 0 2px;line-height:1.3}
+#ed .es{font-size:11.5px;color:var(--tx-2);margin-bottom:10px}
+.stepper{display:flex;align-items:stretch;gap:0;border:1px solid var(--bd);border-radius:8px;overflow:hidden;background:var(--panel-2)}
+.stepper button{width:36px;border:0;background:transparent;cursor:pointer;font-family:var(--font-m);font-size:16px;color:var(--tx-2)}
+.stepper button:hover{background:var(--bd-2);color:var(--tx)}
+.stepper input{flex:1;min-width:0;border:0;border-left:1px solid var(--bd);border-right:1px solid var(--bd);background:var(--panel);
+  text-align:center;font-family:var(--font-m);font-size:16px;font-weight:600;padding:8px 0}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.erow{display:flex;gap:6px;margin-top:9px;align-items:center}
+.mini{border:1px solid var(--bd);background:var(--panel-2);border-radius:7px;padding:5px 9px;cursor:pointer;font-size:11.5px;font-weight:500;white-space:nowrap}
+.mini:hover{border-color:var(--tx-3)}
+.mini.on{background:var(--red);border-color:var(--red);color:#fff}
+.unit{font-size:11.5px;color:var(--tx-3);margin-left:auto;font-family:var(--font-m)}
+.rng{width:100%;margin:11px 0 2px;accent-color:var(--violet);display:block}
+.rngs{display:flex;justify-content:space-between;font-family:var(--font-m);font-size:10px;color:var(--tx-3)}
+.live{display:flex;align-items:baseline;gap:6px;margin-top:9px;padding-top:9px;border-top:1px solid var(--bd-2);font-size:11.5px;color:var(--tx-2)}
+.live b{font-family:var(--font-m);font-size:14px;font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums}
+.live .dlt{font-family:var(--font-m);font-size:11px}
+.live .dlt.up{color:var(--red)} .live .dlt.dn{color:var(--green)}
+
+/* ---------- rail ---------- */
+#rail{background:var(--panel);display:flex;flex-direction:column;min-height:0;overflow-y:auto}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--bd)}
+.tile{padding:9px 10px;border-right:1px solid var(--bd-2)}
+.tile:last-child{border-right:0}
+.tile .k{font-family:var(--font-d);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tx-3);white-space:nowrap}
+.tile .v{font-family:var(--font-m);font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:1px}
+.tabs{display:flex;gap:2px;padding:8px 10px 0;border-bottom:1px solid var(--bd)}
+.tab{border:0;background:transparent;cursor:pointer;padding:6px 9px 8px;border-bottom:2px solid transparent;margin-bottom:-1px;
+  font-family:var(--font-d);font-size:15px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--tx-3)}
+.tab.on{color:var(--tx);border-bottom-color:var(--violet)}
+.pane{padding:12px;display:none;min-height:0}
+.pane.on{display:block}
+
+.sec{font-family:var(--font-d);font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--tx-3);margin:0 0 7px}
+.sec.mt{margin-top:16px}
+.qrow{display:grid;grid-template-columns:42px 1fr auto;gap:8px;align-items:center;padding:4px 0;font-size:12.5px;border-top:1px solid var(--bd-2)}
+.qrow:first-of-type{border-top:0}
+.qrow .d{font-family:var(--font-m);font-weight:600;font-variant-numeric:tabular-nums;text-align:right;color:var(--tx)}
+.qrow.head{color:var(--tx-3);font-family:var(--font-d);letter-spacing:.1em;text-transform:uppercase;font-size:12px;font-weight:600;border:0;padding-bottom:2px}
+.qrow.head .d{font-family:var(--font-d);font-weight:600;color:var(--tx-3)}
+.qrow.pop{background:var(--violet-soft);box-shadow:-8px 0 0 var(--violet-soft),8px 0 0 var(--violet-soft)}
+.qname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lc{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:baseline}
+.empty{color:var(--tx-3);font-size:12px;font-style:italic;padding:6px 0}
+
+.leg{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--bd-2)}
+.leg:first-of-type{border-top:0}
+.leg .bar{width:5px;border-radius:3px;min-height:100%}
+.leg .ln{font-family:var(--font-d);font-size:14px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.leg .st{font-size:12.5px;margin-top:2px;line-height:1.45}
+.leg .mt{font-family:var(--font-m);font-size:11px;color:var(--tx-2);margin-top:3px;font-variant-numeric:tabular-nums}
+.chg{display:flex;gap:8px;align-items:center;padding:8px 0 8px 15px;border-top:1px solid var(--bd-2);font-size:12px;color:var(--amber)}
+.tot{display:grid;grid-template-columns:1fr auto;gap:4px 10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--bd);font-size:12.5px}
+.tot dt{color:var(--tx-2)}
+.tot dd{margin:0;font-family:var(--font-m);font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+
+#log{font-family:var(--font-m);font-size:11px;line-height:1.65;max-height:min(46vh,420px);overflow-y:auto}
+#log div{padding:1px 0;color:var(--tx-2);border-bottom:1px solid var(--bd-2)}
+#log b{color:var(--tx);font-weight:500}
+#log .imp{color:var(--green)}
+#log .fin{color:var(--violet);font-weight:600}
+
+.gset{margin-bottom:13px;font-size:12.5px}
+.gset .hd{display:flex;align-items:baseline;gap:8px}
+.gset .hd span{flex:1;min-width:0}
+.gset .hd b{font-family:var(--font-m);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.gset .hd em{font-style:normal;font-family:var(--font-m);font-size:10.5px;color:var(--tx-3)}
+.gset input[type=range]{width:100%;margin:5px 0 0;accent-color:var(--violet);display:block}
+.gset.ln .hd span{display:flex;align-items:center;gap:6px}
+.chkrow{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;margin:4px 0 2px}
+.seg{border:1px solid var(--bd);border-radius:10px;padding:11px;background:var(--panel-2)}
+.sgrow{display:grid;grid-template-columns:38px 1fr;gap:8px;align-items:center;margin-bottom:6px}
+.sgrow label{font-family:var(--font-d);font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tx-3)}
+.sgrow select{width:100%;min-width:0;background:var(--panel);border:1px solid var(--bd);border-radius:7px;padding:5px 6px;font-size:12.5px}
+.seg .stepper{background:var(--panel)}
+.caution{font-size:11px;line-height:1.5;color:var(--tx-2);background:var(--panel-2);border-left:2px solid var(--amber-fill);
+  padding:6px 9px;border-radius:0 6px 6px 0;margin:-2px 0 11px}
+.wlist{font-size:12.5px}
+.wrow{display:grid;grid-template-columns:8px 1fr auto auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--bd-2)}
+.wrow .w{font-family:var(--font-m);font-weight:600;font-variant-numeric:tabular-nums}
+.wrow .x{border:0;background:transparent;cursor:pointer;color:var(--tx-3);font-size:14px;line-height:1;padding:0 2px}
+.wrow .x:hover{color:var(--red)}
+.wrow .sw{width:8px;height:20px;border-radius:2px}
+.scen{display:flex;flex-direction:column;gap:6px}
+.scen button{text-align:left;border:1px solid var(--bd);background:var(--panel-2);border-radius:8px;padding:8px 10px;cursor:pointer;font-size:12.5px;line-height:1.4}
+.scen button:hover{border-color:var(--tx-3)}
+.scen button b{display:block;font-weight:600;margin-bottom:1px}
+.scen button span{color:var(--tx-2);font-size:11.5px}
+
+/* ---------- footer ---------- */
+#foot{display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap;padding:8px 16px;
+  background:var(--panel);border-top:1px solid var(--bd);padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+#say{font-family:var(--font-m);font-size:11.5px;color:var(--tx);flex:1 1 320px;min-width:0}
+#say b{font-weight:600}
+.legend{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:11px;color:var(--tx-2)}
+.legend i{display:inline-flex;align-items:center;gap:5px;font-style:normal;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;border:2px solid var(--tx-3);background:var(--panel)}
+.dot.s{background:var(--tx-2);border-color:var(--tx-2)}
+.dot.f{border-color:var(--amber-fill);background:var(--panel)}
+.dot.c{border-color:var(--violet);background:var(--violet)}
+.bar3{width:16px;height:5px;border-radius:3px}
+
+@media (max-width:920px){
+  #body{grid-template-columns:1fr;grid-template-rows:minmax(320px,56vh) auto}
+  #mapwrap{border-right:0;border-bottom:1px solid var(--bd)}
+  #rail{overflow:visible}
+  .brand span{display:none}
+  #log{max-height:300px}
+}
+@media (max-width:560px){
+  #bar{gap:10px;padding:10px 12px}
+  .tport{margin-left:0;width:100%}
+  .route{width:100%}
+  .fld{flex:1 1 130px}
+  .fld select{max-width:100%;width:100%}
+  .speed{flex:1 1 100%;padding-left:0}
+  .speed input{flex:1}
+  .tiles{grid-template-columns:repeat(2,1fr)}
+  .tile{border-bottom:1px solid var(--bd-2)}
+  .hint{max-width:none;right:12px;top:12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div id="app">
+  <header id="bar">
+    <div class="brand"><b>Hyderabad Metro</b><span>Dijkstra Router</span></div>
+    <div class="route">
+      <div class="fld"><label for="src">From</label><select id="src"></select></div>
+      <button class="swap" id="swap" title="Swap origin and destination" aria-label="Swap origin and destination">⇄</button>
+      <div class="fld"><label for="dst">To</label><select id="dst"></select></div>
+    </div>
+    <div class="tport">
+      <button class="btn primary" id="play">▶ Run</button>
+      <button class="btn" id="step">Step</button>
+      <button class="btn" id="solve">Solve</button>
+      <button class="btn" id="reset">Reset</button>
+      <div class="speed"><label for="spd">Speed</label><input type="range" id="spd" min="0" max="100" value="62"></div>
+    </div>
+  </header>
+
+  <div id="body">
+    <div id="mapwrap">
+      <svg id="map" role="img" aria-label="Schematic map of the Hyderabad Metro with Dijkstra search state"></svg>
+      <div class="hint" id="hint">
+        <button id="hintx" aria-label="Dismiss">×</button>
+        <b>Drag any segment up or down</b> to retime it live — the route re-solves as you drag.
+        Click it instead for a slider, a number and a maintenance closure. Click a station to set the
+        destination, <kbd>shift</kbd>-click for the origin.
+      </div>
+      <div class="zoom">
+        <button id="zin" title="Zoom in">+</button>
+        <button id="zout" title="Zoom out">−</button>
+        <button id="zfit" title="Fit map">⤢</button>
+      </div>
+      <div id="tip"></div>
+      <div id="ed">
+        <div class="eh"><span id="edk">Segment</span><button id="edx" aria-label="Close">×</button></div>
+        <div class="et" id="edt">—</div>
+        <div class="es" id="eds">—</div>
+        <div class="stepper">
+          <button id="edm" aria-label="Decrease">−</button>
+          <input type="number" id="edv" min="1" max="120" step="1" inputmode="numeric" aria-label="Minutes">
+          <button id="edp" aria-label="Increase">+</button>
+        </div>
+        <input type="range" class="rng" id="edr" min="1" max="30" step="1" aria-label="Drag to change the running time">
+        <div class="rngs"><span>1</span><span>30 min</span></div>
+        <div class="erow">
+          <button class="mini" id="eddef">Default</button>
+          <button class="mini" id="edshut">Close segment</button>
+          <span class="unit">min</span>
+        </div>
+        <div class="live" id="edlive"></div>
+      </div>
+    </div>
+
+    <aside id="rail">
+      <div class="tiles">
+        <div class="tile"><div class="k">Journey</div><div class="v" id="t-time">—</div></div>
+        <div class="tile"><div class="k">Changes</div><div class="v" id="t-chg">—</div></div>
+        <div class="tile"><div class="k">Fare</div><div class="v" id="t-fare">—</div></div>
+        <div class="tile"><div class="k">Settled</div><div class="v" id="t-pop">0</div></div>
+      </div>
+      <div class="tabs">
+        <button class="tab on" data-p="p-plan">Plan</button>
+        <button class="tab" data-p="p-q">Frontier</button>
+        <button class="tab" data-p="p-log">Trace</button>
+        <button class="tab" data-p="p-w">Weights</button>
+      </div>
+      <div class="pane on" id="p-plan"></div>
+      <div class="pane" id="p-q"></div>
+      <div class="pane" id="p-log"><div id="log"></div></div>
+      <div class="pane" id="p-w"></div>
+    </aside>
+  </div>
+
+  <footer id="foot">
+    <div id="say">Ready.</div>
+    <div class="legend">
+      <i><span class="dot"></span>unreached</i>
+      <i><span class="dot f"></span>in queue</i>
+      <i><span class="dot c"></span>popped now</i>
+      <i><span class="dot s"></span>settled</i>
+      <i><span class="bar3" style="background:var(--red)"></span>Red</i>
+      <i><span class="bar3" style="background:var(--green)"></span>Green</i>
+      <i><span class="bar3" style="background:var(--blue)"></span>Blue</i>
+    </div>
+  </footer>
+</div>
+
+<script>
+"use strict";
+/* ------------------------------------------------------------------
+   Hyderabad Metro — Dijkstra over (station, line) states.
+   Ported from MetroSimulation.java in this repo: same station indices,
+   same three corridors, same interchange penalty and fare slabs.
+------------------------------------------------------------------- */
+
+const NAMES = ["LB Nagar","Victoria Memorial","Chaitanyapuri","Dilsukhnagar","Moosarambagh","New Market",
+"Malakpet","MG Bus Station","Osmania Medical","Gandhi Bhavan","Nampally","Assembly","Lakdikapul","Khairatabad",
+"Irrum Manzil","Panjagutta","Ameerpet","SR Nagar","ESI Hospital","Erragadda","Bharat Nagar","Moosapet",
+"Dr. B.R. Ambedkar","Kukatpally","KPHB Colony","JNTU College","Miyapur","Sultan Bazar","Narayanguda",
+"Chikkadpally","RTC X Roads","Musheerabad","Gandhi Hospital","Secunderabad West","Parade Ground","Nagole",
+"Uppal","Stadium","NGRI","Habsiguda","Tarnaka","Mettuguda","Secunderabad East","Paradise","Rasoolpura",
+"Prakash Nagar","Begumpet","Madhura Nagar","Yusufguda","Jubilee Hills","JH Check Post","Peddamma Gudi",
+"Madhapur","Durgam Cheruvu","Hitec City","Raidurg"];
+const N = NAMES.length, L = 3;
+
+const seq = (a,b)=>{const o=[];for(let i=a;i<=b;i++)o.push(i);return o;};
+const LINE = [
+  {name:"Red Line",  css:"var(--red)",   order:seq(0,26)},
+  {name:"Green Line",css:"var(--green)", order:[34,33,32,31,30,29,28,27,7]},
+  {name:"Blue Line", css:"var(--blue)",  order:[35,36,37,38,39,40,41,42,34,43,44,45,46,16,47,48,49,50,51,52,53,54,55]}
+];
+
+/* Schematic geometry: each corridor is a polyline through its interchanges;
+   the stations in between are spread along it by arc length. */
+const RUNS = [
+  [ {a:0, b:7,  pts:[[1110,730],[980,730],[910,660],[750,660]], side:"up"},
+    {a:7, b:16, pts:[[750,660],[610,660],[430,480],[430,410]],  side:"up"},
+    {a:16,b:26, pts:[[430,410],[430,250],[290,110],[150,110]],  side:"left"} ],
+  [ {a:34,b:7,  pts:[[750,180],[750,660]], side:"left"} ],
+  [ {a:35,b:42, pts:[[1190,260],[830,260]], side:"up"},
+    {a:42,b:34, pts:[[830,260],[750,180]],  side:"up"},
+    {a:34,b:16, pts:[[750,180],[660,180],[430,410]], side:"up"},
+    {a:16,b:55, pts:[[430,410],[350,490],[250,490],[170,570],[170,660]], side:"left"} ]
+];
+const LBL_FIX = {
+  16:{dx:-15,dy:-9,anchor:"end"}, 34:{dx:13,dy:-14,anchor:"start"}, 7:{dx:13,dy:21,anchor:"start"},
+  0:{dx:14,dy:4,anchor:"start"}, 26:{dx:-4,dy:-13,anchor:"end"}, 35:{dx:5,dy:-14,anchor:"start"},
+  55:{dx:13,dy:5,anchor:"start"}, 23:{dx:-11,dy:-8,anchor:"end"}
+};
+const XCHG_CHIP = { 16:[466,432], 34:[786,156], 7:[750,700] };
+
+const HOP_DEF = 2, XCHG_DEF = 6, DWELL = 25;
+
+/* ---------- geometry helpers ---------- */
+function meta(pts){
+  const seg=[]; let tot=0;
+  for(let i=0;i+1<pts.length;i++){
+    const dx=pts[i+1][0]-pts[i][0], dy=pts[i+1][1]-pts[i][1], len=Math.hypot(dx,dy);
+    seg.push({p:pts[i],dx,dy,len,at:tot}); tot+=len;
+  }
+  return {pts,seg,tot};
+}
+function at(m,t){
+  t=Math.max(0,Math.min(m.tot,t));
+  for(const s of m.seg){
+    if(t<=s.at+s.len+1e-6){
+      const k=s.len?(t-s.at)/s.len:0;
+      return {x:s.p[0]+s.dx*k, y:s.p[1]+s.dy*k, tx:s.len?s.dx/s.len:1, ty:s.len?s.dy/s.len:0};
+    }
+  }
+  const s=m.seg[m.seg.length-1];
+  return {x:s.p[0]+s.dx, y:s.p[1]+s.dy, tx:s.dx/s.len, ty:s.dy/s.len};
+}
+function slice(m,t0,t1){
+  const a=at(m,t0), b=at(m,t1), out=[[a.x,a.y]];
+  for(const s of m.seg){ const v=s.at+s.len; if(v>t0+.5 && v<t1-.5) out.push([s.p[0]+s.dx,s.p[1]+s.dy]); }
+  out.push([b.x,b.y]); return out;
+}
+const d=(pts)=>"M"+pts.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join("L");
+
+/* ---------- build positions, labels, edges ---------- */
+const pos=new Array(N), lbl=new Array(N);
+const PREF={up:[.2,-1],down:[.2,1],left:[-1,.2],right:[1,.2]};
+const edges=[];                       // {id,kind,line,a,b,st,l1,l2,w,def,shut,pts}
+const trackOf=new Map();              // "line:a:b" -> edge
+const changeOf=new Map();             // "st" -> edge
+
+LINE.forEach((ln,li)=>{
+  RUNS[li].forEach(run=>{
+    const m=meta(run.pts);
+    const i0=ln.order.indexOf(run.a), i1=ln.order.indexOf(run.b), n=i1-i0;
+    const ts=[]; for(let k=0;k<=n;k++) ts.push(m.tot*k/n);
+    for(let k=0;k<=n;k++){
+      const st=ln.order[i0+k], p=at(m,ts[k]);
+      if(!pos[st]){
+        pos[st]={x:p.x,y:p.y};
+        const pr=PREF[run.side]||PREF.up;
+        const cand=[[-p.ty,p.tx],[p.ty,-p.tx]];
+        const nrm=cand[0][0]*pr[0]+cand[0][1]*pr[1] >= cand[1][0]*pr[0]+cand[1][1]*pr[1] ? cand[0]:cand[1];
+        const horiz=Math.abs(p.tx)>.72;
+        let s;
+        if(horiz) s = nrm[1]<0 ? {dx:2,dy:-8,rot:-45,anchor:"start"} : {dx:-2,dy:9,rot:-45,anchor:"end"};
+        else      s = {dx:nrm[0]*11, dy:nrm[1]*11+3.4, rot:0, anchor:nrm[0]>=0?"start":"end"};
+        s.nx=nrm[0]; s.ny=nrm[1];
+        lbl[st]=Object.assign(s, LBL_FIX[st]?Object.assign({rot:0},LBL_FIX[st]):null);
+      }
+      if(k<n){
+        const b=ln.order[i0+k+1];
+        const e={id:edges.length,kind:"track",line:li,a:st,b,w:HOP_DEF,def:HOP_DEF,shut:false,
+                 pts:slice(m,ts[k],ts[k+1])};
+        edges.push(e); trackOf.set(li+":"+st+":"+b,e); trackOf.set(li+":"+b+":"+st,e);
+      }
+    }
+  });
+});
+function linesAt(st){const o=[];LINE.forEach((l,i)=>{if(l.order.includes(st))o.push(i);});return o;}
+const LINES_AT = Array.from({length:N},(_,i)=>linesAt(i));
+for(let st=0;st<N;st++){
+  const ls=LINES_AT[st];
+  if(ls.length>1){
+    const e={id:edges.length,kind:"change",st,l1:ls[0],l2:ls[1],w:XCHG_DEF,def:XCHG_DEF,shut:false};
+    edges.push(e); changeOf.set(st,e);
+  }
+}
+const edgeLabel = e => e.kind==="track"
+  ? NAMES[e.a]+" → "+NAMES[e.b]
+  : "Change at "+NAMES[e.st];
+
+/* ---------- state graph ---------- */
+const S = st=>st*L, sid=(st,l)=>st*L+l, stOf=s=>(s-s%L)/L, lnOf=s=>s%L;
+let adj=[];
+function rebuildAdj(){
+  adj=Array.from({length:N*L},()=>[]);
+  for(const e of edges){
+    if(e.shut) continue;
+    if(e.kind==="track"){
+      const u=sid(e.a,e.line), v=sid(e.b,e.line);
+      adj[u].push({to:v,w:e.w,e:e.id}); adj[v].push({to:u,w:e.w,e:e.id});
+    }else{
+      const u=sid(e.st,e.l1), v=sid(e.st,e.l2);
+      adj[u].push({to:v,w:e.w,e:e.id}); adj[v].push({to:u,w:e.w,e:e.id});
+    }
+  }
+}
+rebuildAdj();
+
+/* ---------- Dijkstra, one pop at a time ---------- */
+const INF=Infinity;
+function newRun(src,dst){
+  const size=N*L;
+  const r={src,dst,dist:new Float64Array(size).fill(INF),par:new Int32Array(size).fill(-1),
+    pare:new Int32Array(size).fill(-1),done:new Uint8Array(size),inQ:new Set(),heap:[],
+    pops:0,relax:0,improved:0,stale:0,finished:false,goal:-1,cur:-1,touched:new Set(),tree:new Set(),seen:new Set()};
+  for(const l of LINES_AT[src]){const s=sid(src,l); r.dist[s]=0; push(r,0,s); r.inQ.add(s); r.touched.add(s);}
+  return r;
+}
+function push(r,d,s){const h=r.heap;h.push([d,s]);let i=h.length-1;
+  while(i>0){const p=(i-1)>>1; if(h[p][0]<=h[i][0])break; [h[p],h[i]]=[h[i],h[p]]; i=p;}}
+function pop(r){const h=r.heap;if(!h.length)return null;const top=h[0],last=h.pop();
+  if(h.length){h[0]=last;let i=0;for(;;){const l=2*i+1,rr=l+1;let m=i;
+    if(l<h.length&&h[l][0]<h[m][0])m=l; if(rr<h.length&&h[rr][0]<h[m][0])m=rr;
+    if(m===i)break;[h[m],h[i]]=[h[i],h[m]];i=m;}}
+  return top;}
+
+function step(r){
+  if(r.finished) return null;
+  for(;;){
+    const top=pop(r);
+    if(!top){ r.finished=true; r.cur=-1; return {kind:"exhausted"}; }
+    const [dv,u]=top;
+    if(dv>r.dist[u]+1e-9){ r.stale++; continue; }
+    if(r.done[u]){ r.stale++; continue; }
+    r.done[u]=1; r.inQ.delete(u); r.pops++; r.cur=u;
+    if(stOf(u)===r.dst){ r.finished=true; r.goal=u; return {kind:"goal",u,d:dv}; }
+    const ev={kind:"pop",u,d:dv,rel:[]};
+    for(const a of adj[u]){
+      r.relax++; r.seen.add(a.e);
+      const nd=dv+a.w, better=nd<r.dist[a.to]-1e-9;
+      if(better){
+        if(r.pare[a.to]>=0) r.tree.delete(r.pare[a.to]);
+        r.dist[a.to]=nd; r.par[a.to]=u; r.pare[a.to]=a.e; r.tree.add(a.e);
+        r.inQ.add(a.to); r.touched.add(a.to); push(r,nd,a.to); r.improved++;
+      }
+      ev.rel.push({e:a.e,to:a.to,nd,better});
+    }
+    return ev;
+  }
+}
+function bestState(r,st){let b=-1;for(const l of LINES_AT[st]){const s=sid(st,l);if(r.dist[s]<INF&&(b<0||r.dist[s]<r.dist[b]))b=s;}return b;}
+function pathOf(r){
+  if(r.goal<0) return [];
+  const out=[]; for(let c=r.goal;c!==-1;c=r.par[c]) out.unshift(c); return out;
+}
+const fare=h=>h<=2?10:h<=4?15:h<=6?25:h<=9?30:h<=14?40:h<=21?50:60;
+
+/* ---------- SVG scaffold ---------- */
+const SVGNS="http://www.w3.org/2000/svg";
+const mk=(t,a)=>{const e=document.createElementNS(SVGNS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const svg=document.getElementById("map"), wrap=document.getElementById("mapwrap");
+const VB={x:-30,y:60,w:1360,h:720};
+svg.setAttribute("viewBox",`${VB.x} ${VB.y} ${VB.w} ${VB.h}`);
+svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+
+const defs=mk("defs");
+const pat=mk("pattern",{id:"gp",width:"26",height:"26",patternUnits:"userSpaceOnUse"});
+pat.appendChild(mk("circle",{cx:"1",cy:"1",r:"1",fill:"var(--grid)"}));
+defs.appendChild(pat); svg.appendChild(defs);
+svg.appendChild(mk("rect",{x:VB.x,y:VB.y,width:VB.w,height:VB.h,fill:"url(#gp)",opacity:".5"}));
+
+const gEdge=mk("g"), gRoute=mk("g"), gHit=mk("g"), gNode=mk("g"), gLbl=mk("g"), gDist=mk("g"), gOver=mk("g");
+[gEdge,gRoute,gHit,gNode,gLbl,gDist,gOver].forEach(g=>svg.appendChild(g));
+
+const elEdge=[], elHit=[];
+for(const e of edges){
+  if(e.kind!=="track") continue;
+  const path=d(e.pts);
+  const vis=mk("path",{class:"edge",d:path,stroke:LINE[e.line].css});
+  const hit=mk("path",{class:"hit",d:path}); hit.dataset.e=e.id;
+  elEdge[e.id]=vis; elHit[e.id]=hit;
+  gEdge.appendChild(vis); gHit.appendChild(hit);
+}
+
+const elNode=[], elRing=[], elLbl=[], elDist=[];
+for(let st=0;st<N;st++){
+  const p=pos[st], ls=LINES_AT[st], xchg=ls.length>1;
+  const term = LINE.some(l=>l.order[0]===st||l.order[l.order.length-1]===st);
+  const ring=mk("circle",{class:"ring",cx:p.x,cy:p.y,r:xchg?12:9,stroke:"none","stroke-width":2.4});
+  const nd=mk("circle",{class:"node dot",cx:p.x,cy:p.y,r:xchg?7:4.6,stroke:LINE[ls[0]].css});
+  nd.dataset.st=st; nd.style.cursor="pointer";
+  elRing[st]=ring; elNode[st]=nd;
+  gNode.appendChild(ring); gNode.appendChild(nd);
+
+  const s=lbl[st];
+  const t=mk("text",{class:"nlabel"+(xchg?" xchg":term?" term":""),x:p.x+s.dx,y:p.y+s.dy,"text-anchor":s.anchor});
+  if(s.rot) t.setAttribute("transform",`rotate(${s.rot} ${(p.x+s.dx).toFixed(1)} ${(p.y+s.dy).toFixed(1)})`);
+  t.textContent=NAMES[st]; elLbl[st]=t; gLbl.appendChild(t);
+
+  const dl=mk("text",{class:"dlabel",x:p.x-s.nx*12,y:p.y-s.ny*12+3,"text-anchor":s.nx>0?"end":"start"});
+  elDist[st]=dl; gDist.appendChild(dl);
+}
+/* interchange chips: click to retune the change penalty */
+const elChip={};
+for(const st in XCHG_CHIP){
+  const [cx,cy]=XCHG_CHIP[st], e=changeOf.get(+st);
+  const g=mk("g",{class:"chip-x"}); g.dataset.e=e.id;
+  g.appendChild(mk("rect",{x:cx-16,y:cy-8,width:32,height:16,rx:8}));
+  const tt=mk("text",{x:cx,y:cy+3.2}); tt.textContent="⇄"+e.w; g.appendChild(tt);
+  elChip[e.id]=tt; gOver.appendChild(g);
+}
+
+/* ---------- pan & zoom ---------- */
+let view={...VB};
+function applyView(){svg.setAttribute("viewBox",`${view.x} ${view.y} ${view.w} ${view.h}`);}
+function zoomAt(f,cx,cy){
+  const nw=Math.max(300,Math.min(2600,view.w*f)), k=nw/view.w;
+  view.x=cx-(cx-view.x)*k; view.y=cy-(cy-view.y)*k;
+  view.w=nw; view.h=view.h*k; applyView();
+}
+const toUser=(ev)=>{const r=svg.getBoundingClientRect();
+  const sx=view.w/r.width, sy=view.h/r.height, s=Math.max(sx,sy);
+  return {x:view.x+view.w/2+(ev.clientX-(r.left+r.width/2))*s, y:view.y+view.h/2+(ev.clientY-(r.top+r.height/2))*s};};
+svg.addEventListener("wheel",ev=>{ev.preventDefault();const p=toUser(ev);zoomAt(ev.deltaY>0?1.12:.89,p.x,p.y);},{passive:false});
+document.getElementById("zin").onclick=()=>zoomAt(.8,view.x+view.w/2,view.y+view.h/2);
+document.getElementById("zout").onclick=()=>zoomAt(1.25,view.x+view.w/2,view.y+view.h/2);
+document.getElementById("zfit").onclick=()=>{view={...VB};applyView();};
+let drag=null;
+svg.addEventListener("pointerdown",ev=>{
+  if(ev.target.closest(".hit,.node,.chip-x,.wbadge")) return;
+  drag={x:ev.clientX,y:ev.clientY,vx:view.x,vy:view.y,moved:0};svg.classList.add("dragging");svg.setPointerCapture(ev.pointerId);
+});
+svg.addEventListener("pointermove",ev=>{
+  if(!drag)return; const r=svg.getBoundingClientRect(), s=Math.max(view.w/r.width,view.h/r.height);
+  view.x=drag.vx-(ev.clientX-drag.x)*s; view.y=drag.vy-(ev.clientY-drag.y)*s; applyView();
+});
+const endDrag=()=>{drag=null;svg.classList.remove("dragging");};
+svg.addEventListener("pointerup",endDrag); svg.addEventListener("pointercancel",endDrag);
+
+/* ---------- tooltip ---------- */
+let hovE=-1;
+const tip=document.getElementById("tip");
+function showTip(html,ev){
+  tip.innerHTML=html; tip.classList.add("on");
+  const b=wrap.getBoundingClientRect();
+  let x=ev.clientX-b.left+14, y=ev.clientY-b.top+14;
+  if(x+240>b.width) x=ev.clientX-b.left-230;
+  if(y+90>b.height) y=ev.clientY-b.top-90;
+  tip.style.left=x+"px"; tip.style.top=y+"px";
+}
+const hideTip=()=>tip.classList.remove("on");
+svg.addEventListener("pointerleave",hideTip);
+
+gNode.addEventListener("pointermove",ev=>{
+  const n=ev.target.closest(".node"); if(!n){hideTip();return;}
+  const st=+n.dataset.st, ls=LINES_AT[st].map(i=>`<span class="lc" style="background:${LINE[i].css}"></span>${LINE[i].name.replace(" Line","")}`).join(" ");
+  const bs=run?bestState(run,st):-1;
+  const dd = bs>=0 ? (run.done[bs]?`${run.dist[bs]} min (settled)`:`${run.dist[bs]} min (tentative)`) : "not reached yet";
+  showTip(`<div class="t">${NAMES[st]}</div><div class="r"><span>index</span><b>#${st}</b></div>
+    <div class="r"><span>lines</span><span>${ls}</span></div><div class="r"><span>dist</span><b>${dd}</b></div>`,ev);
+});
+function setHov(id){
+  if(hovE===id)return;
+  if(hovE>=0&&elEdge[hovE])elEdge[hovE].classList.remove("hov");
+  hovE=id;
+  if(hovE>=0&&elEdge[hovE])elEdge[hovE].classList.add("hov");
+}
+gHit.addEventListener("pointerleave",()=>setHov(-1));
+gHit.addEventListener("pointermove",ev=>{
+  if(eDrag) return;
+  const h=ev.target.closest(".hit"); if(!h){hideTip();setHov(-1);return;}
+  setHov(+h.dataset.e);
+  const e=edges[+h.dataset.e];
+  showTip(`<div class="t">${edgeLabel(e)}</div><div class="r"><span>${LINE[e.line].name}</span><b>${e.shut?"closed":e.w+" min"}</b></div>
+    <div class="r"><span></span><span style="color:var(--tx-3)">click to edit</span></div>`,ev);
+});
+
+/* ---------- controls ---------- */
+const $=id=>document.getElementById(id);
+const selSrc=$("src"), selDst=$("dst");
+const ordered=[...Array(N).keys()].sort((a,b)=>NAMES[a].localeCompare(NAMES[b]));
+for(const s of [selSrc,selDst]) for(const i of ordered){
+  const o=document.createElement("option"); o.value=i; o.textContent=NAMES[i]+"  #"+i; s.appendChild(o);
+}
+let SRC=0, DST=55;
+selSrc.value=SRC; selDst.value=DST;
+
+let run=null, timer=null, playing=false;
+const spd=$("spd");
+const interval=()=>Math.round(420-(+spd.value)*3.95);   // 420ms … 25ms
+
+function say(html){$("say").innerHTML=html;}
+function setPlay(on){
+  playing=on; $("play").innerHTML=on?"⏸ Pause":"▶ Run";
+  if(timer){clearInterval(timer);timer=null;}
+  if(on) timer=setInterval(tick,interval());
+}
+spd.addEventListener("input",()=>{if(playing)setPlay(true);});
+
+function restart(keepPlaying){
+  run=newRun(SRC,DST); flash.clear(); logEl.innerHTML=""; paint(); renderPanes();
+  if(SRC===DST){ say(`Origin and destination are both <b>${NAMES[SRC]}</b>.`); setPlay(false); return; }
+  say(`Searching from <b>${NAMES[SRC]}</b> to <b>${NAMES[DST]}</b> over ${countStates()} (station, line) states.`);
+  if(keepPlaying) setPlay(true);
+}
+const countStates=()=>LINES_AT.reduce((a,l)=>a+l.length,0);
+
+function tick(){
+  const ev=step(run);
+  if(!ev){setPlay(false);return;}
+  narrate(ev);
+  paint();
+  if(run.finished){ setPlay(false); finish(); }
+  renderPanes();
+}
+function solveAll(animate){
+  let guard=0; while(!run.finished && guard++<20000){ const ev=step(run); if(ev) narrate(ev); }
+  paint(); finish(animate); renderPanes();
+}
+let lastMinutes=null;
+function finish(animate){
+  const p=pathOf(run);
+  drawRoute(p,animate);
+  if(!p.length){
+    say(`No route from <b>${NAMES[SRC]}</b> to <b>${NAMES[DST]}</b> — every path is closed.`);
+    $("t-time").textContent="—"; $("t-chg").textContent="—"; $("t-fare").textContent="—";
+    lastMinutes=null;
+    const le0=$("edlive"); if(le0) le0.innerHTML=`<span style="color:var(--red)">No route while this is closed</span>`;
+    return;
+  }
+  const s=summary(p);
+  $("t-time").textContent=s.minutes+"m"; $("t-chg").textContent=s.changes; $("t-fare").textContent="₹"+fare(s.hops);
+  const le=$("edlive");
+  if(le) le.innerHTML = ed.classList.contains("on")
+    ? `Journey now <b>${s.minutes}</b> min · ${s.changes} change${s.changes===1?"":"s"} · ₹${fare(s.hops)}` : "";
+  const dlt = lastMinutes!==null && lastMinutes!==s.minutes
+    ? ` <span style="color:var(--${s.minutes>lastMinutes?"red":"green"})">${s.minutes>lastMinutes?"+":"−"}${Math.abs(s.minutes-lastMinutes)} min</span>` : "";
+  lastMinutes=s.minutes;
+  say(`Settled <b>${NAMES[DST]}</b> at <b>${s.minutes} min</b>${dlt} after ${run.pops} pops — ${s.hops} stations, ${s.changes} change${s.changes===1?"":"s"}, ₹${fare(s.hops)}.`);
+}
+function summary(p){
+  let hops=0,minutes=0,changes=0; const legs=[];
+  for(let i=0;i+1<p.length;i++){
+    const a=p[i],b=p[i+1];
+    const w = stOf(a)===stOf(b) ? changeOf.get(stOf(a)).w : trackOf.get(lnOf(a)+":"+stOf(a)+":"+stOf(b)).w;
+    minutes+=w;
+    if(stOf(a)===stOf(b)) changes++; else hops++;
+  }
+  let s0=0;
+  for(let i=1;i<p.length;i++) if(lnOf(p[i])!==lnOf(p[i-1])){legs.push([lnOf(p[s0]),s0,i-1]);s0=i;}
+  legs.push([lnOf(p[s0]),s0,p.length-1]);
+  return {hops,minutes,changes,legs};
+}
+
+$("play").onclick=()=>{
+  if(SRC===DST) return;
+  if(run.finished) restart(true); else setPlay(!playing);
+};
+$("step").onclick=()=>{ if(SRC===DST)return; setPlay(false); if(run.finished) restart(false); tick(); };
+$("solve").onclick=()=>{ if(SRC===DST)return; setPlay(false); if(run.finished) restart(false); solveAll(true); };
+$("reset").onclick=()=>{ setPlay(false); restart(false); };
+selSrc.onchange=()=>{SRC=+selSrc.value;setPlay(false);restart(false);solveAll(true);};
+selDst.onchange=()=>{DST=+selDst.value;setPlay(false);restart(false);solveAll(true);};
+$("swap").onclick=()=>{[SRC,DST]=[DST,SRC];selSrc.value=SRC;selDst.value=DST;setPlay(false);restart(false);solveAll(true);};
+$("hintx").onclick=()=>$("hint").remove();
+
+gNode.addEventListener("click",ev=>{
+  const n=ev.target.closest(".node"); if(!n)return;
+  const st=+n.dataset.st;
+  if(ev.shiftKey||ev.altKey){ if(st===DST)return; SRC=st; selSrc.value=st; }
+  else { if(st===SRC)return; DST=st; selDst.value=st; }
+  setPlay(false); restart(false); solveAll(true);
+});
+
+/* ---------- painting ---------- */
+const flash=new Set();
+function paint(){
+  const r=run; if(!r) return;
+  for(const e of edges){
+    if(e.kind!=="track") continue;
+    const el=elEdge[e.id]; if(!el) continue;
+    let c="edge";
+    if(e.shut) c+=" closed";
+    else{
+      if(r.seen.has(e.id)) c+=" seen";
+      if(r.tree.has(e.id)) c+=" tree";
+      if(flash.has(e.id)) c+=" flash";
+    }
+    if(hovE===e.id) c+=" hov";
+    if(pickedE===e.id) c+=" pick";
+    if(el.getAttribute("class")!==c) el.setAttribute("class",c);
+  }
+  for(let st=0;st<N;st++){
+    const ls=LINES_AT[st], xchg=ls.length>1;
+    const bs=bestState(r,st);
+    const settled=ls.some(l=>r.done[sid(st,l)]);
+    const inq=ls.some(l=>r.inQ.has(sid(st,l)));
+    const isCur=r.cur>=0&&stOf(r.cur)===st;
+    const nd=elNode[st], ring=elRing[st];
+    nd.setAttribute("fill", settled?LINE[ls[0]].css:"var(--map-bg)");
+    nd.setAttribute("stroke", settled?LINE[ls[0]].css:(inq?"var(--amber-fill)":LINE[ls[0]].css));
+    nd.setAttribute("opacity", settled||inq?1:.55);
+    if(isCur){ ring.setAttribute("stroke","var(--violet)"); ring.setAttribute("opacity","1"); }
+    else if(st===SRC||st===DST){ ring.setAttribute("stroke","var(--tx)"); ring.setAttribute("opacity",".9"); }
+    else if(inq&&!settled){ ring.setAttribute("stroke","var(--amber-fill)"); ring.setAttribute("opacity",".45"); }
+    else ring.setAttribute("stroke","none");
+    const dl=elDist[st];
+    if(showDist && bs>=0 && (settled||inq)){
+      dl.textContent=Math.round(r.dist[bs]);
+      dl.setAttribute("class","dlabel"+(settled?" done":""));
+    } else dl.textContent="";
+    elLbl[st].classList.toggle("on", isCur||st===SRC||st===DST);
+  }
+  if(flash.size) setTimeout(()=>{flash.clear();paint();},Math.min(160,interval()*.7));
+}
+let showDist=true;
+let pickedE=-1;
+function pickEdge(id){ pickedE=id; paint(); }
+
+let routeEls=[];
+function drawRoute(p,animate){
+  routeEls.forEach(e=>e.remove()); routeEls=[];
+  gOver.querySelectorAll(".chg-mark").forEach(e=>e.remove());
+  if(!p.length) return;
+  const {legs}=summary(p);
+  let delay=0;
+  for(const [li,i0,i1] of legs){
+    if(i1===i0) continue;
+    const pts=[];
+    for(let i=i0;i<i1;i++){
+      const e=trackOf.get(li+":"+stOf(p[i])+":"+stOf(p[i+1])); if(!e) continue;
+      const seg = e.a===stOf(p[i]) ? e.pts : [...e.pts].reverse();
+      for(const q of seg) if(!pts.length||pts[pts.length-1][0]!==q[0]||pts[pts.length-1][1]!==q[1]) pts.push(q);
+    }
+    if(pts.length<2) continue;
+    const path=d(pts);
+    const cas=mk("path",{class:"route-cas",d:path});
+    const ln=mk("path",{class:"route-leg",d:path,stroke:LINE[li].css});
+    gRoute.appendChild(cas); gRoute.appendChild(ln); routeEls.push(cas,ln);
+    const len=ln.getTotalLength();
+    ln.style.strokeDasharray=len; ln.style.strokeDashoffset=len;
+    cas.style.strokeDasharray=len; cas.style.strokeDashoffset=len;
+    if(animate===false){
+      for(const el of [cas,ln]){ el.style.transition="none"; el.style.strokeDasharray="none"; el.style.strokeDashoffset=0; }
+    }else{
+      const dur=Math.max(180,len*1.5);
+      for(const el of [cas,ln]){
+        el.style.transition=`stroke-dashoffset ${dur}ms linear ${delay}ms`;
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.strokeDashoffset=0;}));
+      }
+      delay+=dur;
+    }
+  }
+  for(let i=0;i+1<p.length;i++) if(stOf(p[i])===stOf(p[i+1])){
+    const q=pos[stOf(p[i])];
+    const g=mk("g",{class:"chg-mark"});
+    g.appendChild(mk("circle",{cx:q.x,cy:q.y,r:13,fill:"none",stroke:"var(--amber-fill)","stroke-width":2.6}));
+    gOver.appendChild(g);
+  }
+}
+
+/* ---------- trace ---------- */
+const logEl=$("log");
+function narrate(ev){
+  if(scrubbing) return;
+  const row=document.createElement("div");
+  if(ev.kind==="exhausted"){ row.className="fin"; row.textContent="queue empty — destination unreachable"; }
+  else if(ev.kind==="goal"){
+    row.className="fin";
+    row.innerHTML=`pop <b>${NAMES[stOf(ev.u)]}</b> · ${LINE[lnOf(ev.u)].name.replace(" Line","")} @ ${ev.d} — destination settled, stop`;
+    say(`Popped the destination at <b>${ev.d} min</b>: Dijkstra can stop, nothing cheaper remains in the queue.`);
+  } else {
+    const imp=ev.rel.filter(x=>x.better).length;
+    row.innerHTML=`pop <b>${NAMES[stOf(ev.u)]}</b> · ${LINE[lnOf(ev.u)].name.replace(" Line","")} @ ${ev.d} → relax ${ev.rel.length}`
+      + (imp?` <span class="imp">↓${imp}</span>`:"");
+    ev.rel.forEach(x=>{ if(x.better) flash.add(x.e); });
+    say(`Settled <b>${NAMES[stOf(ev.u)]}</b> on the ${LINE[lnOf(ev.u)].name} at ${ev.d} min · relaxed ${ev.rel.length} edge${ev.rel.length===1?"":"s"}, improved ${imp}.`);
+  }
+  logEl.appendChild(row);
+  if(logEl.childElementCount>400) logEl.removeChild(logEl.firstChild);
+  logEl.scrollTop=logEl.scrollHeight;
+}
+
+/* ---------- rail panes ---------- */
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===t));
+  document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id===t.dataset.p));
+  renderPanes();
+});
+function renderPanes(){ renderPlan(); renderQ(); syncW(); $("t-pop").textContent=run?run.pops:0; }
+
+function chipHTML(li){return `<span class="lc" style="background:${LINE[li].css}"></span>`;}
+function renderPlan(){
+  const el=$("p-plan"); const p=run?pathOf(run):[];
+  if(!p.length){
+    el.innerHTML=`<p class="sec">Journey plan</p><div class="empty">${run&&run.finished?"No route — some segment on every path is closed.":"Run the search to build the plan."}</div>`;
+    return;
+  }
+  const s=summary(p);
+  let h=`<p class="sec">Journey plan</p>`;
+  let legNo=0;
+  for(let k=0;k<s.legs.length;k++){
+    const [li,i0,i1]=s.legs[k];
+    if(i1===i0){ continue; }
+    legNo++;
+    const from=stOf(p[i0]), to=stOf(p[i1]), stops=i1-i0;
+    const mins=stops*0+Array.from({length:stops},(_,j)=>trackOf.get(li+":"+stOf(p[i0+j])+":"+stOf(p[i0+j+1])).w).reduce((a,b)=>a+b,0);
+    const via=[]; for(let j=i0+1;j<i1;j++) via.push(NAMES[stOf(p[j])]);
+    h+=`<div class="leg"><div class="bar" style="background:${LINE[li].css}"></div><div>
+      <div class="ln" style="color:${LINE[li].css}">Leg ${legNo} · ${LINE[li].name}</div>
+      <div class="st"><b>${NAMES[from]}</b> → <b>${NAMES[to]}</b></div>
+      <div class="mt">${stops} stop${stops===1?"":"s"} · ${mins} min${via.length?` · via ${via.length>3?via.slice(0,3).join(", ")+" +"+(via.length-3):via.join(", ")}`:""}</div>
+    </div></div>`;
+    if(k+1<s.legs.length){
+      const at=stOf(p[s.legs[k+1][1]]);
+      const w=changeOf.get(at)?changeOf.get(at).w:XCHG_DEF;
+      h+=`<div class="chg">⇄ Change at <b>${NAMES[at]}</b> — ${w} min across the concourse</div>`;
+    }
+  }
+  h+=`<dl class="tot">
+    <dt>Stations travelled</dt><dd>${s.hops}</dd>
+    <dt>Line changes</dt><dd>${s.changes}</dd>
+    <dt>Riding + changing</dt><dd>${s.minutes} min</dd>
+    <dt>With ${DWELL}s dwell each</dt><dd>${Math.round(s.minutes+s.hops*DWELL/60)} min</dd>
+    <dt>Fare (distance slab)</dt><dd>₹${fare(s.hops)}</dd>
+    <dt>States popped</dt><dd>${run.pops} / ${countStates()}</dd>
+  </dl>`;
+  el.innerHTML=h;
+}
+function renderQ(){
+  const el=$("p-q"), r=run;
+  const rows=[...r.inQ].filter(s=>!r.done[s]&&r.dist[s]<INF).sort((a,b)=>r.dist[a]-r.dist[b]);
+  let h=`<p class="sec">Priority queue · ${rows.length} state${rows.length===1?"":"s"}</p>
+    <div class="qrow head"><span class="d">min</span><span>Station</span><span>Line</span></div>`;
+  if(!rows.length) h+=`<div class="empty">${r.finished?"Empty — the search has stopped.":"Nothing queued yet."}</div>`;
+  rows.slice(0,14).forEach(s=>{
+    h+=`<div class="qrow"><span class="d">${Math.round(r.dist[s])}</span>
+      <span class="qname">${NAMES[stOf(s)]}</span>
+      <span>${chipHTML(lnOf(s))}</span></div>`;
+  });
+  if(rows.length>14) h+=`<div class="empty">+${rows.length-14} more queued</div>`;
+  h+=`<p class="sec mt">Counters</p><dl class="tot" style="margin-top:0;border-top:0;padding-top:0">
+    <dt>States settled (pops)</dt><dd>${r.pops}</dd>
+    <dt>Edges relaxed</dt><dd>${r.relax}</dd>
+    <dt>Distances improved</dt><dd>${r.improved}</dd>
+    <dt>Stale entries skipped</dt><dd>${r.stale}</dd>
+    <dt>Stations reached</dt><dd>${new Set([...r.touched].map(stOf)).size} / ${N}</dd></dl>`;
+  el.innerHTML=h;
+}
+const SCEN=[
+  {t:"Normal service",s:"Every hop 2 min, every change 6 min.",f:()=>{edges.forEach(e=>{e.w=e.def;e.shut=false;});}},
+  {t:"Blue Line at rush hour",s:"Hitec City corridor slows to 4 min a hop.",f:()=>{edges.forEach(e=>{if(e.kind==="track"&&e.line===2)e.w=4;});}},
+  {t:"Ameerpet concourse jammed",s:"The Red↔Blue change costs 20 min.",f:()=>{changeOf.get(16).w=20;}},
+  {t:"Durgam Cheruvu–Hitec City closed",s:"Forces a reroute, or no route at all.",f:()=>{trackOf.get("2:53:54").shut=true;}}
+];
+const LINE_TRACKS = LINE.map((_,li)=>edges.filter(e=>e.kind==="track"&&e.line===li));
+const ALL_TRACKS = LINE_TRACKS.flat();
+const XCHG_IDS = [16,34,7];
+
+function buildW(){
+  const el=$("p-w");
+  let h=`<p class="sec">One segment between two stations</p>
+    <div class="seg">
+      <div class="sgrow"><label for="segA">From</label><select id="segA"></select></div>
+      <div class="sgrow"><label for="segB">To</label><select id="segB"></select></div>
+      <div class="stepper" style="margin-top:10px">
+        <button id="segM" aria-label="Decrease">−</button>
+        <input type="number" id="segV" min="1" max="120" step="1" inputmode="numeric" aria-label="Minutes">
+        <button id="segP" aria-label="Increase">+</button>
+      </div>
+      <input type="range" class="rng" id="segR" min="1" max="30" step="1" aria-label="Drag to change this segment">
+      <div class="rngs"><span>1</span><span>30 min</span></div>
+      <div class="erow"><button class="mini" id="segD">Default</button>
+        <button class="mini" id="segS">Close segment</button><span class="unit" id="segU"></span></div>
+    </div>
+    <p class="sec mt">Bulk controls</p>
+    <div class="caution">Each of these rewrites many segments at once and overwrites the individual edits above.</div>
+    <div class="gset"><div class="hd"><span>Every hop of track <em>· all ${ALL_TRACKS.length}</em></span><b id="v-gh">2</b><em>min</em></div>
+      <input type="range" id="gh" min="1" max="12" step="1" value="${HOP_DEF}"></div>
+    <div class="gset"><div class="hd"><span>Every line change <em>· all 3</em></span><b id="v-gx">6</b><em>min</em></div>
+      <input type="range" id="gx" min="1" max="30" step="1" value="${XCHG_DEF}"></div>
+    <p class="sec mt">Whole corridor · minutes a hop</p>`;
+  LINE.forEach((l,li)=>{
+    h+=`<div class="gset ln"><div class="hd"><span><span class="lc" style="background:${l.css}"></span>${l.name}</span><b id="v-l${li}">2</b><em>min</em></div>
+      <input type="range" id="l${li}" min="1" max="12" step="1" value="${HOP_DEF}"></div>`;
+  });
+  h+=`<p class="sec mt">Interchange penalty</p>`;
+  XCHG_IDS.forEach(st=>{
+    h+=`<div class="gset"><div class="hd"><span>${NAMES[st]}</span><b id="v-x${st}">6</b><em>min</em></div>
+      <input type="range" id="x${st}" min="1" max="40" step="1" value="${XCHG_DEF}"></div>`;
+  });
+  h+=`<div class="chkrow"><label for="gd">Show live distances on the map</label><input type="checkbox" id="gd" ${showDist?"checked":""}></div>
+    <p class="sec mt">Scenarios</p><div class="scen">`;
+  SCEN.forEach((sc,i)=>{h+=`<button data-s="${i}"><b>${sc.t}</b><span>${sc.s}</span></button>`;});
+  h+=`</div><div id="w-edited"></div>`;
+  el.innerHTML=h;
+
+  const live=(id,fn)=>{ const el=$(id);
+    el.oninput=ev=>{fn(+ev.target.value);afterWeights(true);};
+    el.onchange=ev=>{fn(+ev.target.value);afterWeights(false);}; };
+  live("gh", v=>ALL_TRACKS.forEach(e=>{e.def=v;e.w=v;}));
+  live("gx", v=>edges.forEach(e=>{if(e.kind==="change"){e.def=v;e.w=v;}}));
+  LINE.forEach((l,li)=>live("l"+li, v=>LINE_TRACKS[li].forEach(e=>{e.w=v;e.shut=false;})));
+  XCHG_IDS.forEach(st=>live("x"+st, v=>{changeOf.get(st).w=v;}));
+  $("gd").onchange=ev=>{showDist=ev.target.checked;paint();};
+
+  /* ---- one segment between two stations ---- */
+  const A=$("segA"), B=$("segB");
+  for(const i of ordered){const o=document.createElement("option");o.value=i;o.textContent=NAMES[i];A.appendChild(o);}
+  A.value=16;
+  function fillB(keep){
+    const list=neighborsOf(+A.value);
+    B.innerHTML="";
+    for(const n of list){
+      const o=document.createElement("option"); o.value=n.id;
+      o.textContent = n.line<0 ? n.label : n.label+"  ·  "+LINE[n.line].name.replace(" Line","");
+      B.appendChild(o);
+    }
+    if(keep!=null && list.some(n=>n.id===+keep)) B.value=keep;
+    syncSeg();
+  }
+  A.onchange=()=>fillB(null);
+  B.onchange=()=>{ syncSeg(); pickEdge(+B.value); };
+  function setSegW(v,live){
+    const e=edges[+B.value]; if(!e)return;
+    e.w=clamp(Math.round(v),1,120); e.shut=false;
+    afterWeights(live);
+  }
+  $("segV").oninput =()=>setSegW(+$("segV").value,true);
+  $("segV").onchange=()=>setSegW(+$("segV").value,false);
+  $("segR").oninput =()=>setSegW(+$("segR").value,true);
+  $("segR").onchange=()=>setSegW(+$("segR").value,false);
+  $("segM").onclick=()=>setSegW(edges[+B.value].w-1,false);
+  $("segP").onclick=()=>setSegW(edges[+B.value].w+1,false);
+  $("segD").onclick=()=>{const e=edges[+B.value];e.w=e.def;e.shut=false;afterWeights(false);};
+  $("segS").onclick=()=>{const e=edges[+B.value];if(e.kind!=="track")return;e.shut=!e.shut;afterWeights(false);};
+  buildW.fillB=fillB;
+  fillB(null);
+  el.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{
+    edges.forEach(e=>{e.w=e.def;e.shut=false;}); SCEN[+b.dataset.s].f(); afterWeights(false);
+  });
+  $("w-edited").addEventListener("click",ev=>{
+    const r=ev.target.closest("[data-r]");
+    if(r){ const e=edges[+r.dataset.r]; e.w=e.def; e.shut=false; afterWeights(false); return; }
+    const c=ev.target.closest("[data-l]");
+    if(c){ LINE_TRACKS[+c.dataset.l].forEach(e=>{e.w=e.def;}); afterWeights(false); return; }
+    if(ev.target.id==="wreset"){ edges.forEach(e=>{e.w=e.def;e.shut=false;}); afterWeights(false); }
+  });
+}
+const uniform=(list,pick)=>{const v=new Set(list.map(pick));return v.size===1?[...v][0]:null;};
+/* The weight most of a corridor runs at. Segments off it are the real edits. */
+function lineBase(li){
+  const open=LINE_TRACKS[li].filter(e=>!e.shut);
+  if(!open.length) return LINE_TRACKS[li][0].def;
+  const tally=new Map();
+  for(const e of open) tally.set(e.w,(tally.get(e.w)||0)+1);
+  let best=open[0].def, bc=-1;
+  for(const [w,c] of tally) if(c>bc || (c===bc && w===open[0].def)){best=w;bc=c;}
+  return best;
+}
+/* Every segment that touches a station: its track neighbours, plus its interchange. */
+function neighborsOf(st){
+  const out=[];
+  for(const e of edges){
+    if(e.kind!=="track") continue;
+    if(e.a===st) out.push({id:e.id,label:NAMES[e.b],line:e.line});
+    else if(e.b===st) out.push({id:e.id,label:NAMES[e.a],line:e.line});
+  }
+  if(changeOf.has(st)){
+    const e=changeOf.get(st);
+    out.push({id:e.id,line:-1,label:`change ${LINE[e.l1].name.split(" ")[0]} ⇄ ${LINE[e.l2].name.split(" ")[0]}`});
+  }
+  return out;
+}
+function syncSeg(){
+  const B=$("segB"); if(!B||!B.value) return;
+  const e=edges[+B.value]; if(!e) return;
+  $("segV").value=e.w;
+  $("segR").max = e.kind==="change" ? 40 : 30;
+  $("segR").value=Math.min(+$("segR").max,e.w);
+  $("segR").parentNode.querySelector(".rngs").lastElementChild.textContent=$("segR").max+" min";
+  $("segS").style.display = e.kind==="track" ? "" : "none";
+  $("segS").classList.toggle("on",e.shut);
+  $("segS").textContent = e.shut?"Reopen":"Close segment";
+  $("segU").textContent = e.shut ? "closed" : "default "+e.def;
+  if(pickedE!==e.id) pickEdge(e.id);
+}
+function syncW(){
+  if(!$("gh")) return;
+  syncSeg();
+  const hop=uniform(ALL_TRACKS,e=>e.def);
+  if(hop!==null) $("gh").value=hop;
+  $("v-gh").textContent = hop===null?"—":hop;
+  const xd=uniform(edges.filter(e=>e.kind==="change"),e=>e.def);
+  if(xd!==null) $("gx").value=xd;
+  $("v-gx").textContent = xd===null?"—":xd;
+  LINE.forEach((l,li)=>{
+    const open=LINE_TRACKS[li].filter(e=>!e.shut);
+    const u=open.length?uniform(open,e=>e.w):null;
+    if(u!==null) $("l"+li).value=u;
+    $("v-l"+li).textContent = u===null?"mixed":u;
+  });
+  XCHG_IDS.forEach(st=>{const w=changeOf.get(st).w;$("x"+st).value=Math.min(40,w);$("v-x"+st).textContent=w;});
+
+  const rows=[];
+  LINE.forEach((l,li)=>{
+    const base=lineBase(li), def=LINE_TRACKS[li][0].def;
+    const open=LINE_TRACKS[li].filter(e=>!e.shut);
+    if(base!==def && open.length)
+      rows.push({col:l.css,name:`${l.name} · all ${open.length} hops`,w:base+"m",reset:`data-l="${li}"`,tip:`Reset the whole corridor to ${def} min`});
+    for(const e of LINE_TRACKS[li]){
+      if(e.shut) rows.push({col:"var(--red)",name:edgeLabel(e),w:"closed",reset:`data-r="${e.id}"`,tip:"Reopen this segment"});
+      else if(e.w!==base) rows.push({col:l.css,name:edgeLabel(e),w:e.w+"m",reset:`data-r="${e.id}"`,tip:`Reset to ${e.def} min`});
+    }
+  });
+  for(const e of edges) if(e.kind==="change" && e.w!==e.def)
+    rows.push({col:"var(--amber-fill)",name:edgeLabel(e),w:e.w+"m",reset:`data-r="${e.id}"`,tip:`Reset to ${e.def} min`});
+
+  let h=`<p class="sec mt">Edited · ${rows.length}</p>`;
+  if(!rows.length) h+=`<div class="empty">Nothing off-default — drag a segment on the map, or a slider above.</div>`;
+  else{
+    h+=`<div class="wlist">`;
+    for(const r of rows)
+      h+=`<div class="wrow"><span class="sw" style="background:${r.col}"></span>
+        <span class="qname">${r.name}</span><span class="w">${r.w}</span>
+        <button class="x" ${r.reset} title="${r.tip}">×</button></div>`;
+    h+=`</div><button class="mini" id="wreset" style="margin-top:10px">Reset every weight</button>`;
+  }
+  $("w-edited").innerHTML=h;
+}
+/* Aim the From/To pickers at an edge picked on the map, so both views agree. */
+function pointPickerAt(e){
+  const A=$("segA"); if(!A||!buildW.fillB) return;
+  const st = e.kind==="track" ? e.a : e.st;
+  A.value=st; buildW.fillB(e.id);
+}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,isFinite(v)?v:a));
+
+/* ---------- weight editor ---------- */
+const ed=$("ed"); let edE=null;
+function openEd(e,cx,cy){
+  edE=e;
+  $("edk").textContent = e.kind==="track" ? LINE[e.line].name : "Interchange";
+  $("edt").textContent = edgeLabel(e);
+  $("eds").textContent = e.kind==="track"
+    ? `One hop of track · default ${e.def} min`
+    : `${LINE[e.l1].name} ⇄ ${LINE[e.l2].name} · default ${e.def} min`;
+  $("edv").value=e.w; $("edr").value=Math.min(30,e.w);
+  $("edr").max = e.kind==="change" ? 40 : 30;
+  ed.querySelector(".rngs").lastElementChild.textContent = $("edr").max+" min";
+  $("edshut").classList.toggle("on",e.shut);
+  $("edshut").textContent=e.shut?"Reopen segment":"Close segment";
+  $("edshut").style.display = e.kind==="track" ? "" : "none";
+  ed.classList.add("on");
+  const b=wrap.getBoundingClientRect();
+  let x=cx-b.left+16, y=cy-b.top-30;
+  x=Math.max(8,Math.min(b.width-254,x)); y=Math.max(8,Math.min(b.height-210,y));
+  ed.style.left=x+"px"; ed.style.top=y+"px";
+  document.querySelectorAll(".hit.sel").forEach(h=>h.classList.remove("sel"));
+  if(elHit[e.id]) elHit[e.id].classList.add("sel");
+  pointPickerAt(e);
+  $("edv").focus(); $("edv").select();
+}
+function closeEd(){ed.classList.remove("on");edE=null;document.querySelectorAll(".hit.sel").forEach(h=>h.classList.remove("sel"));}
+$("edx").onclick=closeEd;
+function setEdW(v,live){
+  if(!edE)return;
+  edE.w=clamp(Math.round(v),1,120); edE.shut=false;
+  $("edv").value=edE.w; $("edr").value=Math.min(+$("edr").max,edE.w);
+  $("edshut").classList.remove("on"); $("edshut").textContent="Close segment";
+  afterWeights(live);
+}
+$("edv").oninput=()=>setEdW(+$("edv").value,true);
+$("edv").onchange=()=>setEdW(+$("edv").value,false);
+$("edr").oninput=()=>setEdW(+$("edr").value,true);
+$("edr").onchange=()=>setEdW(+$("edr").value,false);
+$("edm").onclick=()=>setEdW(edE?edE.w-1:1,false);
+$("edp").onclick=()=>setEdW(edE?edE.w+1:1,false);
+$("eddef").onclick=()=>{ if(!edE)return; setEdW(edE.def,false); };
+$("edshut").onclick=()=>{ if(!edE)return; edE.shut=!edE.shut;
+  $("edshut").classList.toggle("on",edE.shut); $("edshut").textContent=edE.shut?"Reopen segment":"Close segment"; afterWeights(); };
+gHit.addEventListener("click",ev=>{
+  const h=ev.target.closest(".hit"); if(!h)return;
+  if(clickGuard){clickGuard=false;return;}
+  openEd(edges[+h.dataset.e],ev.clientX,ev.clientY);
+});
+
+/* Drag straight on a segment: up = slower, down = faster. Re-solves on every pixel. */
+let eDrag=null, clickGuard=false;
+gHit.addEventListener("pointerdown",ev=>{
+  const h=ev.target.closest(".hit"); if(!h)return;
+  const e=edges[+h.dataset.e];
+  eDrag={e,y0:ev.clientY,w0:e.w,moved:false};
+  try{ gHit.setPointerCapture(ev.pointerId); }catch(_){}
+});
+gHit.addEventListener("pointermove",ev=>{
+  if(!eDrag)return;
+  const dy=eDrag.y0-ev.clientY;
+  if(!eDrag.moved && Math.abs(dy)<5) return;
+  if(!eDrag.moved) pointPickerAt(eDrag.e);
+  eDrag.moved=true; clickGuard=true;
+  const v=clamp(Math.round(eDrag.w0+dy/7),1,120);
+  if(v!==eDrag.e.w||eDrag.e.shut){ eDrag.e.w=v; eDrag.e.shut=false; afterWeights(true); }
+  if(edE===eDrag.e){ $("edv").value=eDrag.e.w; $("edr").value=Math.min(+$("edr").max,eDrag.e.w); }
+  showTip(`<div class="t">${edgeLabel(eDrag.e)}</div>
+    <div class="r"><span>running time</span><b>${eDrag.e.w} min</b></div>
+    <div class="r"><span>journey</span><b>${$("t-time").textContent}</b></div>`,ev);
+});
+function endEdgeDrag(){
+  if(!eDrag)return;
+  const moved=eDrag.moved; eDrag=null;
+  if(moved){ afterWeights(false); hideTip(); }
+}
+gHit.addEventListener("pointerup",endEdgeDrag);
+gHit.addEventListener("pointercancel",endEdgeDrag);
+gOver.addEventListener("click",ev=>{
+  const c=ev.target.closest(".chip-x,.wbadge"); if(!c)return;
+  openEd(edges[+c.dataset.e],ev.clientX,ev.clientY);
+});
+document.addEventListener("keydown",ev=>{ if(ev.key==="Escape") closeEd(); });
+
+/* weight badges: only edited segments carry a number, so the map stays readable */
+function renderBadges(){
+  gOver.querySelectorAll(".wbadge,.shut-g").forEach(e=>e.remove());
+  for(const e of edges){
+    if(e.kind==="change"){ const t=elChip[e.id]; if(t){ t.textContent="⇄"+e.w;
+        t.parentNode.classList.toggle("edited",e.w!==e.def); } continue; }
+    const mid=e.pts[Math.floor((e.pts.length-1)/2)], nxt=e.pts[Math.floor((e.pts.length-1)/2)+1]||mid;
+    const mx=(mid[0]+nxt[0])/2, my=(mid[1]+nxt[1])/2;
+    if(e.shut){
+      const g=mk("g",{class:"shut-g"});
+      g.appendChild(mk("line",{class:"shut",x1:mx-6,y1:my-6,x2:mx+6,y2:my+6}));
+      g.appendChild(mk("line",{class:"shut",x1:mx+6,y1:my-6,x2:mx-6,y2:my+6}));
+      gOver.appendChild(g);
+      continue;
+    }
+    if(e.w!==lineBase(e.line)){
+      const g=mk("g",{class:"wbadge"}); g.dataset.e=e.id;
+      g.appendChild(mk("rect",{x:mx-11,y:my-7.5,width:22,height:15,rx:7.5}));
+      const t=mk("text",{x:mx,y:my+3.2}); t.textContent=e.w; g.appendChild(t);
+      gOver.appendChild(g);
+    }
+  }
+}
+let scrubbing=false;
+function afterWeights(live){
+  scrubbing=!!live;
+  rebuildAdj(); renderBadges();
+  const wasPlaying=playing; setPlay(false);
+  restart(false);
+  if(wasPlaying) setPlay(true); else solveAll(!live);
+  scrubbing=false;
+}
+
+/* ---------- boot: open on a solved, realistic trip ---------- */
+buildW();
+restart(false);
+renderBadges();
+solveAll(true);
+</script>
